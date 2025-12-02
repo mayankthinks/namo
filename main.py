@@ -104,7 +104,7 @@ async def main():
 
         tasks = []
 
-        for i in range(1, 500000):
+        for i in range(1, 5000000):
             if stop_flag:
                 break
 

@@ -104,11 +104,11 @@ async def main():
 
         tasks = []
 
-        for i in range(1, 50000):
+        for i in range(1, 8000000):
             if stop_flag:
                 break
 
-            comment = f"Y5dw96 Bjp {i}"
+            comment = f"Y5rrrdw96 Bjp {i}"
             tasks.append(asyncio.create_task(sem_task(comment)))
 
             if i % 50 == 0:

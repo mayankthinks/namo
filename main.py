@@ -25,7 +25,7 @@ HEADERS = {
 def build_body(i: int):
     return {
         "buzzsectionid": "5406",
-        "id": f"Bj7ppp{i}",                 # 🔥 AUTO INCREMENT
+        "id": f"Bj75ppp{i}",                 # 🔥 AUTO INCREMENT
         "buzzid": "5405",
         "relation_type": "sharetweet",
         "share_platform": "Twitter",
@@ -97,8 +97,8 @@ async def main():
 
             tasks.append(asyncio.create_task(sem_task(i)))
 
-            if i % 100 == 0:
-                await asyncio.sleep(5)
+            if i % 50 == 0:
+                await asyncio.sleep(2)
 
         await asyncio.gather(*tasks, return_exceptions=True)
 

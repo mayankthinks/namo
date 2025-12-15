@@ -25,7 +25,7 @@ HEADERS = {
 def build_body(i: int):
     return {
         "buzzsectionid": "5406",
-        "id": f"Bj247565ppp{i}",                 # 🔥 AUTO INCREMENT
+        "id": f"Bj2475565ppp{i}",                 # 🔥 AUTO INCREMENT
         "buzzid": "5405",
         "relation_type": "sharetweet",
         "share_platform": "Twitter",
@@ -78,7 +78,7 @@ async def send_request(session, i, retries=3):
 async def main():
     global stop_flag
 
-    concurrency = 3
+    concurrency = 2
     semaphore = asyncio.Semaphore(concurrency)
 
     async with aiohttp.ClientSession() as session:

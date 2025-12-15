@@ -110,11 +110,11 @@ async def main():
             if stop_flag:
                 break
 
-            comment = f"151555512222 Bjp {i}"
+            comment = f"1351555512222 Bjp {i}"
             tasks.append(asyncio.create_task(sem_task(comment)))
 
             if i % 50 == 0:
-                await asyncio.sleep(5)
+                await asyncio.sleep(3)
 
         await asyncio.gather(*tasks, return_exceptions=True)
 

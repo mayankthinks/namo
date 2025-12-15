@@ -74,7 +74,7 @@ async def send_comment(session, comment, retries=3):
             return
 
         try:
-            async with session.post(URL, headers=headers, data=body, timeout=5) as response:
+            async with session.post(URL, headers=headers, data=body, timeout=1) as response:
                 print(f"Sent: {comment} | Status: {response.status}")
 
                 if response.status == 403:
@@ -106,11 +106,11 @@ async def main():
 
         tasks = []
 
-        for i in range(1, 5000000):
+        for i in range(1, 50000000):
             if stop_flag:
                 break
 
-            comment = f"bgtp5 {i}"
+            comment = f"pat bjp 1 {i}"
             tasks.append(asyncio.create_task(sem_task(comment)))
 
             if i % 50 == 0:

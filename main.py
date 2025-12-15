@@ -25,7 +25,7 @@ HEADERS = {
 def build_body(i: int):
     return {
         "buzzsectionid": "5406",
-        "id": f"Bjpp{i}",                 # 🔥 AUTO INCREMENT
+        "id": f"Bjppp{i}",                 # 🔥 AUTO INCREMENT
         "buzzid": "5405",
         "relation_type": "sharetweet",
         "share_platform": "Twitter",

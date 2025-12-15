@@ -74,7 +74,7 @@ async def send_comment(session, comment, retries=3):
             return
 
         try:
-            async with session.post(URL, headers=headers, data=body, timeout=1) as response:
+            async with session.post(URL, headers=headers, data=body, timeout=2) as response:
                 print(f"Sent: {comment} | Status: {response.status}")
 
                 if response.status == 403:
@@ -87,7 +87,7 @@ async def send_comment(session, comment, retries=3):
 
         except Exception as e:
             print(f"Error sending {comment}: {e}, retry {attempt+1}")
-            await asyncio.sleep(5)
+            await asyncio.sleep(3)
 
 
 async def main():
@@ -110,11 +110,11 @@ async def main():
             if stop_flag:
                 break
 
-            comment = f"pat bjp 1 {i}"
+            comment = f"patt bjp 1 {i}"
             tasks.append(asyncio.create_task(sem_task(comment)))
 
             if i % 50 == 0:
-                await asyncio.sleep(2)
+                await asyncio.sleep(5)
 
         await asyncio.gather(*tasks, return_exceptions=True)
 

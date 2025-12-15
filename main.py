@@ -92,7 +92,7 @@ async def send_comment(session, comment, retries=3):
 
 async def main():
     global stop_flag
-    concurrency = 3
+    concurrency = 2
     semaphore = asyncio.Semaphore(concurrency)
 
     async with aiohttp.ClientSession() as session:
@@ -110,11 +110,11 @@ async def main():
             if stop_flag:
                 break
 
-            comment = f"111512222 Bjp {i}"
+            comment = f"11155512222 Bjp {i}"
             tasks.append(asyncio.create_task(sem_task(comment)))
 
             if i % 50 == 0:
-                await asyncio.sleep(2)
+                await asyncio.sleep(3)
 
         await asyncio.gather(*tasks, return_exceptions=True)
 

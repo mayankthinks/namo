@@ -28,34 +28,46 @@ HEADERS = {
 def build_body(comment):
     return (
         f"--{BOUNDARY}\r\n"
-        "Content-Disposition: form-data; name=\"taskid\"\r\n\r\n"
-        "5d8521be2c675f3816bf56eb\r\n"
-        f"--{BOUNDARY}\r\n"
-        "Content-Disposition: form-data; name=\"X-Access-Token\"\r\n\r\n"
-        "fa4d7d63ee643db59e1bc0d943b1be037a831955527ebe82d203e0c2f2df65fbbc31e94d778b9b5457851ecf1ffc33cfb3b50b4d73dd503e811329e2f1d25d83d96ddaaa4a1fadb40b133fe9d26b96954ffdaaec8d2ca2e7c7451a50f34b0795b77858fc24739d25a9d8d8a97ed7c7155f69ca9321288aeeebae48bd271b954002f619fc1f68df0b5561183deddf1d5f612a90296ba2ed4e73af9715afe865b8d3aca137f318cb0cf674684dbc006a03630beb52bb031168eedec4ae25d855b132e37ac198aa9672ab87192b4e4b83dd33b78fddc1e15d1f0a92a52003367d89d3eb5880465630cb6d1dc9178eea58f0\r\n"
-        f"--{BOUNDARY}\r\n"
-        "Content-Disposition: form-data; name=\"deviceid\"\r\n\r\n"
-        "8455FFF3-8E05-4F50-8087-D71D37FB4F2C\r\n"
-        f"--{BOUNDARY}\r\n"
-        "Content-Disposition: form-data; name=\"action\"\r\n\r\n"
-        "postcomment\r\n"
-        f"--{BOUNDARY}\r\n"
-        "Content-Disposition: form-data; name=\"navigationtag\"\r\n\r\n\r\n"
-        f"--{BOUNDARY}\r\n"
-        "Content-Disposition: form-data; name=\"commenttext\"\r\n\r\n"
-        f"{comment}\r\n"
-        f"--{BOUNDARY}\r\n"
-        "Content-Disposition: form-data; name=\"apiversion\"\r\n\r\n"
-        "2\r\n"
-        f"--{BOUNDARY}\r\n"
-        "Content-Disposition: form-data; name=\"x-app-version\"\r\n\r\n"
-        "7.8\r\n"
+        "Content-Disposition: form-data; name=\"postid\"\r\n\r\n"
+        "600508\r\n"
+
         f"--{BOUNDARY}\r\n"
         "Content-Disposition: form-data; name=\"addressid\"\r\n\r\n"
         "5e6d8b312636f2a3be74d4ea6646602ccfc20c7b80840364649d32f4075006a0\r\n"
+
+        f"--{BOUNDARY}\r\n"
+        "Content-Disposition: form-data; name=\"deviceid\"\r\n\r\n"
+        "8455FFF3-8E05-4F50-8087-D71D37FB4F2C\r\n"
+
+        f"--{BOUNDARY}\r\n"
+        "Content-Disposition: form-data; name=\"action\"\r\n\r\n"
+        "postcomment\r\n"
+
+        f"--{BOUNDARY}\r\n"
+        "Content-Disposition: form-data; name=\"navigationtag\"\r\n\r\n\r\n"
+
+        f"--{BOUNDARY}\r\n"
+        "Content-Disposition: form-data; name=\"apiversion\"\r\n\r\n"
+        "2\r\n"
+
+        f"--{BOUNDARY}\r\n"
+        "Content-Disposition: form-data; name=\"type\"\r\n\r\n"
+        "news-updates\r\n"
+
+        f"--{BOUNDARY}\r\n"
+        "Content-Disposition: form-data; name=\"comment\"\r\n\r\n"
+        f"{comment}\r\n"
+
+        f"--{BOUNDARY}\r\n"
+        "Content-Disposition: form-data; name=\"x-app-version\"\r\n\r\n"
+        "7.8\r\n"
+
+        f"--{BOUNDARY}\r\n"
+        "Content-Disposition: form-data; name=\"X-Access-Token\"\r\n\r\n"
+        "fa4d7d63ee643db59e1bc0d943b1be037a831955527ebe82d203e0c2f2df65fbbc31e94d778b9b5457851ecf1ffc33cfb3b50b4d73dd503e811329e2f1d25d83d96ddaaa4a1fadb40b133fe9d26b96954ffdaaec8d2ca2e7c7451a50f34b0795b77858fc24739d25a9d8d8a97ed7c7155f69ca9321288aeeebae48bd271b954002f619fc1f68df0b5561183deddf1d5f612a90296ba2ed4e73af9715afe865b8d3aca137f318cb0cf674684dbc006a03630beb52bb031168eedec4ae25d855b132e37ac198aa9672ab87192b4e4b83dd33b78fddc1e15d1f0a92a52003367d89d3eb5880465630cb6d1dc9178eea58f0\r\n"
+
         f"--{BOUNDARY}--\r\n"
     )
-
 # -----------------------------
 # Async send_comment with retries
 # -----------------------------
@@ -73,7 +85,7 @@ async def send_comment(session, comment, retries=3):
             return
 
         try:
-            async with session.post(URL, headers=headers, data=body, timeout=2) as response:
+            async with session.post(URL, headers=headers, data=body, timeout=5) as response:
                 print(f"Sent: {comment} | Status: {response.status}")
 
                 if response.status == 403:
@@ -86,7 +98,7 @@ async def send_comment(session, comment, retries=3):
 
         except Exception as e:
             print(f"Error sending {comment}: {e}, retry {attempt+1}")
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
 
 
 async def main():
@@ -113,7 +125,7 @@ async def main():
             tasks.append(asyncio.create_task(sem_task(comment)))
 
             if i % 50 == 0:
-                await asyncio.sleep(5)
+                await asyncio.sleep(3)
 
         await asyncio.gather(*tasks, return_exceptions=True)
 

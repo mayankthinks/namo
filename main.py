@@ -92,7 +92,7 @@ async def send_comment(session, comment, retries=3):
 
 async def main():
     global stop_flag
-    concurrency = 4
+    concurrency = 3
     semaphore = asyncio.Semaphore(concurrency)
 
     async with aiohttp.ClientSession() as session:

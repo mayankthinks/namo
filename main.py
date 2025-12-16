@@ -25,7 +25,7 @@ HEADERS = {
 def build_body(i: int):
     return {
         "buzzsectionid": "5406",
-        "id": f"Bj245755ft65ppp{i}",                 # 🔥 AUTO INCREMENT
+        "id": f"Bj245755ft6f5ppp{i}",                 # 🔥 AUTO INCREMENT
         "buzzid": "5405",
         "relation_type": "sharetweet",
         "share_platform": "Twitter",
@@ -78,7 +78,7 @@ async def send_request(session, i, retries=3):
 async def main():
     global stop_flag
 
-    concurrency = 3
+    concurrency = 4
     semaphore = asyncio.Semaphore(concurrency)
 
     async with aiohttp.ClientSession() as session:
@@ -97,7 +97,7 @@ async def main():
 
             tasks.append(asyncio.create_task(sem_task(i)))
 
-            if i % 100 == 0:
+            if i % 50 == 0:
                 await asyncio.sleep(5)
 
         await asyncio.gather(*tasks, return_exceptions=True)

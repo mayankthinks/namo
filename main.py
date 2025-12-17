@@ -155,7 +155,7 @@ async def main():
             tasks.append(asyncio.create_task(runner(i)))
 
             if i % 50 == 0:
-                await asyncio.sleep(2)
+                await asyncio.sleep(5)
 
         await asyncio.gather(*tasks, return_exceptions=True)
 

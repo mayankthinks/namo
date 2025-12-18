@@ -37,7 +37,7 @@ HEADERS = {
 # =========================================================
 
 def make_description(i: int) -> str:
-    return f"हर घर स्वदेशी, घर घर स्वदेशी - आत्मनिर्भर भारत #186667fee101{i}"
+    return f"हर घर स्वदेशी, घर घर स्वदेशी - आत्मनिर्भर भारत #186667fehe101{i}"
 
 # =========================================================
 # MULTIPART BODY BUILDER
@@ -155,7 +155,7 @@ async def main():
             tasks.append(asyncio.create_task(runner(i)))
 
             if i % 50 == 0:
-                await asyncio.sleep(5)
+                await asyncio.sleep(2)
 
         await asyncio.gather(*tasks, return_exceptions=True)
 

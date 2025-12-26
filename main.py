@@ -8,7 +8,7 @@ import aiohttp
 URL = "https://api.narendramodi.in/mlapiv1"   # ⛔ replace ONLY in authorized lab
 BOUNDARY = "Boundary+TEST123456"
 
-CONCURRENCY = 10
+CONCURRENCY = 3
 MAX_RETRIES = 1
 TOTAL_REQUESTS = 1000000
 

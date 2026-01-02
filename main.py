@@ -1,21 +1,24 @@
 import asyncio
 import aiohttp
+import os
 
 # =========================================================
-# CONFIG (SAFE / PLACEHOLDER)
+# CONFIGURATION
 # =========================================================
 
-URL = "https://api.narendramodi.in/mlapiv1"   # ⛔ replace ONLY in authorized lab
-BOUNDARY = "Boundary+TEST123456"
+URL = "https://api.narendramodi.in/mlapiv1"
+CONCURRENCY = 1        # Number of simultaneous requests
+TOTAL_REQUESTS = 500000    # Total requests to send
+MAX_RETRIES = 3        # Retries if a request fails
 
-CONCURRENCY = 1
-MAX_RETRIES = 1
-TOTAL_REQUESTS = 1000000
+# The image file to upload. 
+# ⚠️ THIS FILE MUST EXIST IN THE SAME FOLDER ⚠️
+IMAGE_FILENAME = "rb.jpeg"
 
 stop_flag = False
 
 # =========================================================
-# HEADERS (SANITIZED)
+# HEADERS
 # =========================================================
 
 HEADERS = {
@@ -24,150 +27,146 @@ HEADERS = {
     "Requestfrom": "ios",
     "Upload-Draft-Interop-Version": "6",
     "Upload-Complete": "?1",
-    "Accept-Language": "en-IN;q=1, hi-IN;q=0.9",
+    "Accept-Language": "en-IN;q=1, hi-IN;q=0.9, hi-Latn-IN;q=0.8",
     "Accept-Encoding": "gzip, deflate, br",
-    "User-Agent": "NM-App-Test/7.8 (iOS)",
+    "User-Agent": "Narendra Modi App/7.8 (iOS 18.5; iPhone Build/Narendra Modi App)",
     "Connection": "keep-alive",
-    "Cookie": "_abck=E921128DDAE2823E0112175943B9E330~-1~YAAQVXIsMQc+Yy+bAQAAFxy6Ww/i19Ds7YyqtOIwBcj5595BzM0R+HxgvM4run+06vvJCtClFZ7W7SCPIc1pHBStyLkJtx47hPDUDRQSjByZDUhNn/xP7NIIt4OxmwoSiy/dlKNSo8wBD3RlsRXAKl43jYxPt6bBbI2CqaAJUNBiLqS9dvsXTCDHJ8FknqMuLLwpne/2V1X257i3lU6rH/dBGznIVSDiZNmkrX1DlLDKrrzIj1tijCTpvn7pxz9c0+DqENudQpad3VptUQsZ6fUMkF2xTAQUzVzgRVD9c3b9bDnf/yhoVq8hl/HW0w6z9Wegmwcc5T4TSCr04NPYxOwhTTWafK8/bwOLKRVnKiyQNK57OGvUhLiS04Xnd3MoAWapYuRmjD6PGC9OjkR96UKkv9njJq5yT2EiLgZozcGXR3B2DhuJcMne8Hxn2de/9kIHVep2X3jUJaUDm6N24ObghAjOeEhI4LLVc1/NAbuHG42QwZ7gfJdBwCYHVI00ZplPseCZO+W1WyojyF3mrH27S3bAGQ+tZW700cGSaX7vWPcU4h6V50Yj6dr4vMP038c32Ts=~-1~-1~1765907225~AASAAAAE%2f%2f%2f%2f%2f6Wk3kihiD2nXO2VCmgoSdNntX0%2f2v0dITY7B6MB7iU+IHFTYqCHVkPt70t12YXm1KganDO1~-1; NSC_10.10.24.75_443=ffffffff0902062045525d5f4f58455e445a4a423660; ak_bmsc=1C6C94DD3FCD25802B9783B04299224F~000000000000000000000000000000~YAAQVXIsMd5eYi+bAQAAeZWoWx58tolGhvYH1aBJo/P87TUjunrlovd1BLx1IFF7kLCUvrYd85p4tahyRKuF5UpUI5TDfRciRgcU+lkyiZgYr0HNcrGp47uc9nPq3R6uG6ueHsUFQZU89kzIPM1EPnCEMmwZGjxHzLJcdzlAJrJ04uo5cCINszLXO6R1ma9BENLfFwkt1uPg4iycJntf7FcdXxpgkPd2KYbHtO/T/zQKDncxEwPnA8E1JjcczyYvdqrl9x14z2BpuqtsNjOTkrFNgldLCrzO/2UB/hPsTjs9+sjHo/VQDXNTcpoL5Zd/KVWBLQMzIF+YecfmlXtGVQRupnSfBBxVzGYH22TM6Vqe3A==; bm_sz=1E23F40B186E194D5C8B12966C57C766~YAAQVXIsMcz6Xy+bAQAAoZSSWx7i5LJqGgNTb3od9v/5TfJd+gj+enbr8DA29kH2JfRVa41f9Y1g4L1mZurp6b4lT6gI9frcCrrw37jYQKU8xOnTFHpSKwvKkjRogeK5fIDnyCSl/t6/w/vBM67izQWStzkhIHTNh8lJO/B7xeG+trHqwWq1/avOhRnl+mEyQf09z1izSheOU77vlNgwvlTH3nzOolMvYG/Q3xz0T+ahu5DnExuL83FiLamyDObew07QYaROG+jp9QdbRWFOYHSk11DFeTNU0XLmm6C9Ovqx+3QafuSenxEmqRcnkgJ6UeAaICS/NTmbCbci0DJmwXibBjeCWAj5fEj71a+NMKqxG+SIFCugzlOebnACE1sCKx32IFvgKadkeA2my9qQATYkcezLcURTfRyJdX1P/c8iQrCn~4539205~3356721; _ga_F433FYMYX9=GS2.1.s1765908971$o4$g1$t1765908973$j58$l0$h0; _ga_GXKBS9831X=GS2.1.s1765908971$o2$g0$t1765908973$j58$l0$h0; _fbp=fb.1.1758623618568.22689390473729608; WZRK_G=0b186018b046466a9c8fabc3a6abc97e; _ga=GA1.1.169979920.1756910999; _ga_KY7X120D0N=GS2.1.s1765908967$o3$g0$t1765908967$j60$l0$h0; _ga_6XHS1RXTBF=GS2.1.s1765903577$o2$g0$t1765903577$j60$l0$h0; _ga_KE0FR5JBNB=GS2.1.s1765903414$o2$g0$t1765903414$j60$l0$h0; _ga_VFNMV2T18E=GS2.1.s1765902441$o2$g1$t1765902491$j10$l0$h0; _ga_977P7XNV6X=GS2.2.s1758550394$o3$g0$t1758550394$j60$l0$h0; _ga_HQGP5S5CDY=GS2.1.s1756910998$o1$g0$t1756910999$j59$l0$h0"
+    # Cookie from your latest dump
+    "Cookie": "NSC_10.10.24.75_443=ffffffff0902067c45525d5f4f58455e445a4a423660; _abck=FDB3220133339F2D910B7F843BED449F~-1~YAAQx6TUFwK6fE6bAQAAPoHefw8OfZKHncdSilg7jKl1VSUfed/V3MhX/IEdKapaihQudd2VCju6WMGB/fd0PVAvGw0mfmw3gBs/6DFi/MPibvAo9/v5f8xEAc5+3vMBx1RDyAeY5rXkEU/8aOCUEfUpJHlkM+PMQlbKFiSjTbMgthhAhZWG59mS6K78CF4b0K6H6YAV5nrjBzKGFXnM7WoQ+LdcJo4Q8cLBZhiEAw5Ljs2ZRDb/3CIexjsGQLcb1sYiioCwuVcxZO3vEq4psVCvrCBt8ZuzpQbByrSM8orVlMPSAbbc9pghMlXFQ4waH/oevit2AOrcaUm1XQaLLNR0uB8sMnrpjFd+jVsxNcrJSo/1T4CDGA==~-1~-1~-1~AASAAAAE%2f%2f%2f%2f%2f5JL6YH8QcuG2P6OJ4vQx3KxCZ8rETDVUlrZJZ5bRoCbQFz4aRKR1BdhVfhwxW7MsghZsV63~-1; bm_sz=D2F8A004D24154DAF2C2A937FC99E84B~YAAQrAzVF+g1zS2bAQAAXBHOfx6jMyr5PdtI59gSD5SiXmbLusDX8rgB3LpBN3qXjN8zgwWh/4D6yZ06asJaL21M+XSVuk4pyGdO7lH2CZeDamMdivpcKYNdL6AcatK8DXElKbsaqu5Rk/Y4ucEUw4gBRIOnQOuGfWzZuW0vFecOoh2/aIYfZbe31kKKOVAlifkKrTeWiZYcbHPv9ywwS/QfmesaQsLFDQKvi8rAA3KvaUajbpMY+0VGBvxqvjPTDuxfTM9u+I0DN2/cMWGjKzybOdEH4YfJXD1mor6jhPH5c3vOXiCxLDJtRkXWZ16QGdAUMsjpS6Bam38T+M2AxUgX+41y7L5RlqrkfN8qKTeDhZ9z3LIHrK9KNIrMtdMSS5lpvyQQXEmWu0ul~4468791~4600886; ak_bmsc=D21A175315101EA25739D481B7337C84~000000000000000000000000000000~YAAQXgkuF2Tb/HKbAQAAFMLKfx7UbZRKuc+dAngJMXlbJXi6tO0ouwIKdOkxCkLtaOzAbhMvFMaUx4NQfxCEQtrKPduN+phQKw8h59rXM0LmeUhlao4dF9ciUO66sKg6gtrIdVZE+Pp/X0NgPltsHGpHEXltOzAmSewjrg/xVTM8fMxLcqpulih6M6yVRN3xT8uYAZKtCUJwHwDmgDxzeGe1/fl48ksN+tTF9erwOyyKXi8rs8ktp+em2WYfZQM83GaAE1ehPKzCs/RqrVn2+I+jVCDtC82zpRP0E0b5bOdKL2SU9wSBPWRhEOKILeix6TMcfpdrhjL55O3BZCH2IEIywwnGwv79CyOcVvaKzCQGQHJhVFwO2aH3gqidT7fUrXlBhLkz7ACnNemovmEy/rq4R9tw3lorW4jHwng6NbTX"
 }
 
 # =========================================================
-# MULTIPART BODY
+# DATA BUILDER
 # =========================================================
 
-def build_body(index: int) -> str:
-    return (
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="description"\r\n\r\n\r\n'
+def build_form_data(index: int):
+    # Using aiohttp.FormData handles the Boundary automatically.
+    data = aiohttp.FormData()
+    
+    # 1. Description (Hindi + Tag + Index to avoid duplicates)
+    data.add_field("description", f"सशक्त नारी, विकसित भारत!\n\n#WomenEmpowerment11 - {index}")
+    
+    # 2. Dates
+    data.add_field("enddate", "2026-01-03 23:33:00")
+    data.add_field("startdate", "2026-01-02 23:33:00")
+    
+    # 3. Links & IDs
+    data.add_field("youtubelink", "")
+    data.add_field("event_cat_id", "0")
+    data.add_field("referral_jsondata", "[]")
+    
+    # 4. Location
+    data.add_field("longitude", "86.975656")
+    data.add_field("latitude", "25.253978")
+    
+    # 5. Title (Hindi + Tag)
+    data.add_field("title", f"सशक्त नारी, विकसित भारत!\n\n#WomenEmpowerment1 - {index}")
+    
+    # 6. Action & Flag
+    data.add_field("action", "createeventtask")
+    data.add_field("flag", "volunteer")
+    
+    # 7. Access Token (From your dump)
+    data.add_field("X-Access-Token", "19385891a626ce735e693ce89e96480ee06f0ad34cf2f7085b316b830259af704ce5b641c38fdb61eaaee03dfd3661c00768c516a8f9f36997ad1405eeb62821ae57db9f02a2b9fae69a21f554e003adcfee34f7e1e4dcf5d085d1877bd3e31748a74fe2606e81f976dd87b56909935e65df51587ea5e093893b2fd9090d3f06f2879cfeabf90c15279d96cf8996ce00537fc3b9c64b960a57f46d5dea34af84b2fa660d23b885a8d1702bdaed7818edbc5c5d956931337e802ad64288ad73cce00dcbc777d94f4ddedff7b1539c56c52b22b8a5ccac3559b4184c5cb0d5ec437a6804ea297f29babf18572a377147e6")
+    
+    # 8. Device & Venue Info
+    data.add_field("deviceid", "8455FFF3-8E05-4F50-8087-D71D37FB4F2C")
+    data.add_field("venue", "16, Deep Nagar , Bhagalpur, 812001 , Bihar , India")
+    data.add_field("addressid", "1ee9f0cc08de502c70e706f6fd7289c9ae51c122e04ba3fd9fac14ff6234d5e9")
+    
+    # 9. Versions
+    data.add_field("x-app-version", "7.8")
+    data.add_field("apiversion", "2")
+    data.add_field("navigationtag", "")
+    
+    # 10. IMAGE UPLOAD
+    # This block handles the binary part (ÿØÿà...) automatically
+    if os.path.exists(IMAGE_FILENAME):
+        data.add_field("image1", 
+                       open(IMAGE_FILENAME, "rb"), 
+                       filename=IMAGE_FILENAME, 
+                       content_type="image/jpeg")
+    else:
+        raise FileNotFoundError(f"File {IMAGE_FILENAME} not found.")
 
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="enddate"\r\n\r\n\r\n'
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="startdate"\r\n\r\n\r\n'
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="liketype"\r\n\r\n'
-        "likemedia\r\n"
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="linkurl"\r\n\r\n\r\n'
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="navigationtag"\r\n\r\n\r\n'
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="addressid"\r\n\r\n'
-        "13b7363bd59097275c257fdb851a448e28b7415ded656033d44a5fb4c786178f\r\n"
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="title"\r\n\r\n'
-        f"Har Ghar Swadeshi, Ghar-Ghar Swadeshi 11#{index}\r\n"
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="action"\r\n\r\n'
-        "createliketask\r\n"
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="X-Access-Token"\r\n\r\n'
-        "090d9c7a834ca0123bf4cef01b11e1d156c20d88677a12cb815154f6a92141fd026dfe7a8a8e84ee855d159a74b25d4edf9e6e95896f6231f60ebf2bba8a6368f3e557548df9f400a8e5d94e2880c345e0598d851afe1e320abd69145b7b0849162bc409b07f885577ae9b846d8b68fd092dc9817ed6de897864e0579b87ec2e9e46a839ebd569ac4dc74dc03bc4857aead80c49836256b07196df4bce17e821327be7b786b23c125f7f75cd02e4f7988f49461a565036d46ef84e3c6d08791e817f1276189d39c2ec751c9b706232014417f3d418e4c4e95524bcc8a2deaa74ba521c85d4060da88b5fc362a210db24\r\n"
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="tasktype"\r\n\r\n'
-        "like\r\n"
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="deviceid"\r\n\r\n'
-        "8455FFF3-8E05-4F50-8087-D71D37FB4F2C\r\n"
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="apiversion"\r\n\r\n'
-        "2\r\n"
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="groupid"\r\n\r\n\r\n'
-
-        f"--{BOUNDARY}\r\n"
-        'Content-Disposition: form-data; name="x-app-version"\r\n\r\n'
-        "7.8\r\n"
-
-        f"--{BOUNDARY}--\r\n"
-    )
+    return data
 
 # =========================================================
-# REQUEST SENDER
+# WORKER FUNCTION
 # =========================================================
 
 async def send_request(session, index: int):
     global stop_flag
+    
+    if stop_flag: return
 
-    if stop_flag:
+    try:
+        data = build_form_data(index)
+    except FileNotFoundError as e:
+        print(f"❌ {e}")
+        stop_flag = True
         return
 
-    body = build_body(index)
-
-    headers = HEADERS.copy()
-    headers["Content-Type"] = f"multipart/form-data; boundary={BOUNDARY}"
+    # No manual Content-Type header; aiohttp handles the boundary
+    request_headers = HEADERS.copy()
 
     for attempt in range(1, MAX_RETRIES + 1):
-        if stop_flag:
-            return
+        if stop_flag: return
 
         try:
-            async with session.post(
-                URL,
-                headers=headers,
-                data=body,
-                timeout=5
-            ) as response:
-
-                print(f"[{index}] Status {response.status}")
+            # Increased timeout to 20s for image upload
+            async with session.post(URL, headers=request_headers, data=data, timeout=20) as response:
+                
+                print(f"[{index}] Status: {response.status}")
 
                 if response.status == 403:
+                    print(f"❌ 403 Forbidden at index {index}. Stopping.")
                     stop_flag = True
-                    print("❌ 403 detected — stopping all tasks")
                     return
-
+                
                 if response.status == 200:
                     return
 
         except Exception as e:
-            print(f"[{index}] Error (attempt {attempt}): {e}")
-            await asyncio.sleep(1)
+            print(f"[{index}] Error (Attempt {attempt}): {e}")
+            await asyncio.sleep(2)
 
 # =========================================================
-# MAIN EXECUTOR (THROTTLE ADDED ✅)
+# MAIN EXECUTION
 # =========================================================
 
 async def main():
+    if not os.path.exists(IMAGE_FILENAME):
+        print(f"❌ ERROR: '{IMAGE_FILENAME}' not found in this folder.")
+        print("Please ensure 'photo.jpg' is present.")
+        return
+
+    print(f"🚀 Starting {TOTAL_REQUESTS} requests...")
+    
     semaphore = asyncio.Semaphore(CONCURRENCY)
 
     async with aiohttp.ClientSession() as session:
-
+        
         async def runner(i):
             async with semaphore:
                 await send_request(session, i)
 
         tasks = []
-
         for i in range(1, TOTAL_REQUESTS + 1):
             if stop_flag:
                 break
-
-            tasks.append(asyncio.create_task(runner(i)))
-
-            # ✅ SAME THROTTLE AS ORIGINAL SCRIPT
-            if i % 50 == 0:
-                await asyncio.sleep(1)
+            
+            task = asyncio.create_task(runner(i))
+            tasks.append(task)
+            
+            if i % 100 == 0:
+                await asyncio.sleep(10)
 
         await asyncio.gather(*tasks, return_exceptions=True)
-
-# =========================================================
-# ENTRY POINT
-# =========================================================
+        print("✅ Finished.")
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nStopped by user")
+        print("\nStopped.")

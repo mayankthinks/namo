@@ -7,7 +7,7 @@ import os
 # =========================================================
 
 URL = "https://api.narendramodi.in/mlapiv1"
-CONCURRENCY = 1        # Number of simultaneous requests
+CONCURRENCY = 3        # Number of simultaneous requests
 TOTAL_REQUESTS = 500000    # Total requests to send
 MAX_RETRIES = 3        # Retries if a request fails
 
@@ -159,8 +159,8 @@ async def main():
             task = asyncio.create_task(runner(i))
             tasks.append(task)
             
-            if i % 100 == 0:
-                await asyncio.sleep(10)
+            if i % 50 == 0:
+                await asyncio.sleep(5)
 
         await asyncio.gather(*tasks, return_exceptions=True)
         print("✅ Finished.")

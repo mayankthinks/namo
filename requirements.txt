@@ -1,2 +1,2 @@
-aiohttp
-asyncio
+requests
+requests-toolbelt

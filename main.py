@@ -3,10 +3,19 @@ import time
 import signal
 import sys
 import concurrent.futures
+import socket
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
+# Force IPv4 - Fix for AWS EC2 where IPv6 is unreachable
+original_getaddrinfo = socket.getaddrinfo
+
+def forced_ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    return original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+socket.getaddrinfo = forced_ipv4_getaddrinfo
+
 # --- Configuration ---
-START_POST_ID = 150990
+START_POST_ID = 150690
 END_POST_ID = 100000000
 CONCURRENT_WORKERS = 10
 DELAY_PER_REQUEST = 0.1

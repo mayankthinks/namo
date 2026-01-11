@@ -1,172 +1,218 @@
-import asyncio
-import aiohttp
-import os
+import requests
+import time
+import signal
+import sys
+import concurrent.futures
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
-# =========================================================
-# CONFIGURATION
-# =========================================================
+# --- Configuration ---
+START_POST_ID = 150690
+END_POST_ID = 100000000
+CONCURRENT_WORKERS = 10
+DELAY_PER_REQUEST = 0.1
+PAUSE_INTERVAL = 100
+PAUSE_DURATION = 2
+REQUEST_TIMEOUT = 10
+MAX_RETRIES = 3
 
-URL = "https://api.narendramodi.in/mlapiv1"
-CONCURRENCY = 3        # Number of simultaneous requests
-TOTAL_REQUESTS = 500000    # Total requests to send
-MAX_RETRIES = 3        # Retries if a request fails
+# Credentials
+X_ACCESS_TOKEN = "4947cc41372a23e93cc7eea9eefc937dfe1088984dca182bf079b228f7c8ce573842323bd005a181e6b18cdfe0ebe90168b8c3525f60e2898fa7ddf3bf74e6dff5535f5ae7c9035db00f7e8e07559cf42d770ecdd9d80e6dd301e50966143063485ac90ad1de207bbdf4f755cf1de9c0b528685d14e11d9b9db007a4d4fa53498c2dca6e170d1f6020b77c7a8bbfbd17632259f03bef332747345987e5e5f0c47de77864330e52b316dcb38732c759e60a702b5120ba1d351d176f0001bfccf49c7a25dc00b4955f6dccf00136efffb39b8bd3414d01af305e73a1b7617868f0d018627e22fdb069fea62363e01c77da"
+ADDRESS_ID = "4973ead8a91b974b2af3ce356ddd8134ebb496e4d070a26c58cd5e08e9040720"
+DEVICE_ID = "b7e10055-66bb-2012-9e3c-d690e0f34f8c"
+TOKEN = "pOMW+oq2p5Thkecatjd5bINTCYADHxix1cSpvaJLVpbie6j/S8C3f16o+7U5GU0g"
 
-# The image file to upload. 
-# ⚠️ THIS FILE MUST EXIST IN THE SAME FOLDER ⚠️
-IMAGE_FILENAME = "rb.jpeg"
+url = "https://api.narendramodi.in/apiv1"
 
-stop_flag = False
-
-# =========================================================
-# HEADERS
-# =========================================================
-
-HEADERS = {
+headers_template = {
     "Host": "api.narendramodi.in",
     "Accept": "*/*",
-    "Requestfrom": "ios",
-    "Upload-Draft-Interop-Version": "6",
-    "Upload-Complete": "?1",
-    "Accept-Language": "en-IN;q=1, hi-IN;q=0.9, hi-Latn-IN;q=0.8",
+    "Sec-Fetch-Site": "same-site",
+    "Accept-Language": "en-IN,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
-    "User-Agent": "Narendra Modi App/7.8 (iOS 18.5; iPhone Build/Narendra Modi App)",
+    "Sec-Fetch-Mode": "cors",
+    "Origin": "https://www.narendramodi.in",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
+    "Referer": "https://www.narendramodi.in/",
     "Connection": "keep-alive",
-    # Cookie from your latest dump
-    "Cookie": "NSC_10.10.24.75_443=ffffffff0902067c45525d5f4f58455e445a4a423660; _abck=FDB3220133339F2D910B7F843BED449F~-1~YAAQx6TUFwK6fE6bAQAAPoHefw8OfZKHncdSilg7jKl1VSUfed/V3MhX/IEdKapaihQudd2VCju6WMGB/fd0PVAvGw0mfmw3gBs/6DFi/MPibvAo9/v5f8xEAc5+3vMBx1RDyAeY5rXkEU/8aOCUEfUpJHlkM+PMQlbKFiSjTbMgthhAhZWG59mS6K78CF4b0K6H6YAV5nrjBzKGFXnM7WoQ+LdcJo4Q8cLBZhiEAw5Ljs2ZRDb/3CIexjsGQLcb1sYiioCwuVcxZO3vEq4psVCvrCBt8ZuzpQbByrSM8orVlMPSAbbc9pghMlXFQ4waH/oevit2AOrcaUm1XQaLLNR0uB8sMnrpjFd+jVsxNcrJSo/1T4CDGA==~-1~-1~-1~AASAAAAE%2f%2f%2f%2f%2f5JL6YH8QcuG2P6OJ4vQx3KxCZ8rETDVUlrZJZ5bRoCbQFz4aRKR1BdhVfhwxW7MsghZsV63~-1; bm_sz=D2F8A004D24154DAF2C2A937FC99E84B~YAAQrAzVF+g1zS2bAQAAXBHOfx6jMyr5PdtI59gSD5SiXmbLusDX8rgB3LpBN3qXjN8zgwWh/4D6yZ06asJaL21M+XSVuk4pyGdO7lH2CZeDamMdivpcKYNdL6AcatK8DXElKbsaqu5Rk/Y4ucEUw4gBRIOnQOuGfWzZuW0vFecOoh2/aIYfZbe31kKKOVAlifkKrTeWiZYcbHPv9ywwS/QfmesaQsLFDQKvi8rAA3KvaUajbpMY+0VGBvxqvjPTDuxfTM9u+I0DN2/cMWGjKzybOdEH4YfJXD1mor6jhPH5c3vOXiCxLDJtRkXWZ16QGdAUMsjpS6Bam38T+M2AxUgX+41y7L5RlqrkfN8qKTeDhZ9z3LIHrK9KNIrMtdMSS5lpvyQQXEmWu0ul~4468791~4600886; ak_bmsc=D21A175315101EA25739D481B7337C84~000000000000000000000000000000~YAAQXgkuF2Tb/HKbAQAAFMLKfx7UbZRKuc+dAngJMXlbJXi6tO0ouwIKdOkxCkLtaOzAbhMvFMaUx4NQfxCEQtrKPduN+phQKw8h59rXM0LmeUhlao4dF9ciUO66sKg6gtrIdVZE+Pp/X0NgPltsHGpHEXltOzAmSewjrg/xVTM8fMxLcqpulih6M6yVRN3xT8uYAZKtCUJwHwDmgDxzeGe1/fl48ksN+tTF9erwOyyKXi8rs8ktp+em2WYfZQM83GaAE1ehPKzCs/RqrVn2+I+jVCDtC82zpRP0E0b5bOdKL2SU9wSBPWRhEOKILeix6TMcfpdrhjL55O3BZCH2IEIywwnGwv79CyOcVvaKzCQGQHJhVFwO2aH3gqidT7fUrXlBhLkz7ACnNemovmEy/rq4R9tw3lorW4jHwng6NbTX"
+    "Sec-Fetch-Dest": "empty"
 }
 
-# =========================================================
-# DATA BUILDER
-# =========================================================
+# Graceful shutdown flag
+shutdown_requested = False
 
-def build_form_data(index: int):
-    # Using aiohttp.FormData handles the Boundary automatically.
-    data = aiohttp.FormData()
-    
-    # 1. Description (Hindi + Tag + Index to avoid duplicates)
-    data.add_field("description", f"सशक्त नारी, विकसित भारत!\n\n#WomenEmpowerment11 - {index}")
-    
-    # 2. Dates
-    data.add_field("enddate", "2026-01-03 23:33:00")
-    data.add_field("startdate", "2026-01-02 23:33:00")
-    
-    # 3. Links & IDs
-    data.add_field("youtubelink", "")
-    data.add_field("event_cat_id", "0")
-    data.add_field("referral_jsondata", "[]")
-    
-    # 4. Location
-    data.add_field("longitude", "86.975656")
-    data.add_field("latitude", "25.253978")
-    
-    # 5. Title (Hindi + Tag)
-    data.add_field("title", f"सशक्त नारी, विकसित भारत!\n\n#WomenEmpowerment1 - {index}")
-    
-    # 6. Action & Flag
-    data.add_field("action", "createeventtask")
-    data.add_field("flag", "volunteer")
-    
-    # 7. Access Token (From your dump)
-    data.add_field("X-Access-Token", "19385891a626ce735e693ce89e96480ee06f0ad34cf2f7085b316b830259af704ce5b641c38fdb61eaaee03dfd3661c00768c516a8f9f36997ad1405eeb62821ae57db9f02a2b9fae69a21f554e003adcfee34f7e1e4dcf5d085d1877bd3e31748a74fe2606e81f976dd87b56909935e65df51587ea5e093893b2fd9090d3f06f2879cfeabf90c15279d96cf8996ce00537fc3b9c64b960a57f46d5dea34af84b2fa660d23b885a8d1702bdaed7818edbc5c5d956931337e802ad64288ad73cce00dcbc777d94f4ddedff7b1539c56c52b22b8a5ccac3559b4184c5cb0d5ec437a6804ea297f29babf18572a377147e6")
-    
-    # 8. Device & Venue Info
-    data.add_field("deviceid", "8455FFF3-8E05-4F50-8087-D71D37FB4F2C")
-    data.add_field("venue", "16, Deep Nagar , Bhagalpur, 812001 , Bihar , India")
-    data.add_field("addressid", "1ee9f0cc08de502c70e706f6fd7289c9ae51c122e04ba3fd9fac14ff6234d5e9")
-    
-    # 9. Versions
-    data.add_field("x-app-version", "7.8")
-    data.add_field("apiversion", "2")
-    data.add_field("navigationtag", "")
-    
-    # 10. IMAGE UPLOAD
-    # This block handles the binary part (ÿØÿà...) automatically
-    if os.path.exists(IMAGE_FILENAME):
-        data.add_field("image1", 
-                       open(IMAGE_FILENAME, "rb"), 
-                       filename=IMAGE_FILENAME, 
-                       content_type="image/jpeg")
-    else:
-        raise FileNotFoundError(f"File {IMAGE_FILENAME} not found.")
+def signal_handler(sig, frame):
+    """Handle Ctrl+C gracefully"""
+    global shutdown_requested
+    print("\n⚠️  Shutdown requested. Completing current tasks...")
+    shutdown_requested = True
 
-    return data
+# Register signal handlers
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
-# =========================================================
-# WORKER FUNCTION
-# =========================================================
-
-async def send_request(session, index: int):
-    global stop_flag
+def send_request_with_retry(post_id):
+    """Send request with retry logic and exponential backoff"""
+    global shutdown_requested
     
-    if stop_flag: return
-
-    try:
-        data = build_form_data(index)
-    except FileNotFoundError as e:
-        print(f"❌ {e}")
-        stop_flag = True
-        return
-
-    # No manual Content-Type header; aiohttp handles the boundary
-    request_headers = HEADERS.copy()
-
+    if shutdown_requested:
+        return False
+    
     for attempt in range(1, MAX_RETRIES + 1):
-        if stop_flag: return
-
+        if shutdown_requested:
+            return False
+            
         try:
-            # Increased timeout to 20s for image upload
-            async with session.post(URL, headers=request_headers, data=data, timeout=20) as response:
-                
-                print(f"[{index}] Status: {response.status}")
+            fields = {
+                "image": "",
+                "comment": "Jai Bjp",
+                "type": "news-updates",
+                "postid": str(post_id),
+                "title": "",
+                "subcomment": "No",
+                "action": "postcomment",
+                "X-Access-Token": X_ACCESS_TOKEN,
+                "addressid": ADDRESS_ID,
+                "deviceid": DEVICE_ID,
+                "apiversion": "2",
+                "version": "3",
+                "token": TOKEN,
+                "request_source": "pwa",
+                "lang": "en",
+                "platform": "iOS"
+            }
 
-                if response.status == 403:
-                    print(f"❌ 403 Forbidden at index {index}. Stopping.")
-                    stop_flag = True
-                    return
-                
-                if response.status == 200:
-                    return
+            m = MultipartEncoder(fields=fields)
+            current_headers = headers_template.copy()
+            current_headers["Content-Type"] = m.content_type
 
+            response = requests.post(
+                url, 
+                data=m, 
+                headers=current_headers, 
+                timeout=REQUEST_TIMEOUT
+            )
+            
+            # Validate response
+            if response.status_code == 200:
+                try:
+                    json_response = response.json()
+                    status = json_response.get("status", "unknown")
+                    message = json_response.get("message", "")
+                    print(f"✅ PostID: {post_id} | Status: {response.status_code} | Response: {status} - {message}")
+                except:
+                    print(f"✅ PostID: {post_id} | Status: {response.status_code}")
+                return True
+                
+            elif response.status_code == 429:
+                # Rate limited - wait longer before retry
+                wait_time = (2 ** attempt) * 2
+                print(f"⏳ PostID: {post_id} | Rate limited. Waiting {wait_time}s before retry...")
+                time.sleep(wait_time)
+                continue
+                
+            elif response.status_code >= 500:
+                # Server error - retry with backoff
+                wait_time = 2 ** attempt
+                print(f"🔄 PostID: {post_id} | Server error {response.status_code}. Retry {attempt}/{MAX_RETRIES} in {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+                
+            else:
+                print(f"❌ PostID: {post_id} | Failed with status: {response.status_code}")
+                return False
+            
+        except requests.exceptions.Timeout:
+            wait_time = 2 ** attempt
+            print(f"⏱️  PostID: {post_id} | Timeout. Retry {attempt}/{MAX_RETRIES} in {wait_time}s...")
+            time.sleep(wait_time)
+            
+        except requests.exceptions.ConnectionError as e:
+            wait_time = 2 ** attempt
+            print(f"🔌 PostID: {post_id} | Connection error. Retry {attempt}/{MAX_RETRIES} in {wait_time}s...")
+            time.sleep(wait_time)
+            
         except Exception as e:
-            print(f"[{index}] Error (Attempt {attempt}): {e}")
-            await asyncio.sleep(2)
-
-# =========================================================
-# MAIN EXECUTION
-# =========================================================
-
-async def main():
-    if not os.path.exists(IMAGE_FILENAME):
-        print(f"❌ ERROR: '{IMAGE_FILENAME}' not found in this folder.")
-        print("Please ensure 'photo.jpg' is present.")
-        return
-
-    print(f"🚀 Starting {TOTAL_REQUESTS} requests...")
+            print(f"❌ PostID: {post_id} | Error: {e}")
+            return False
     
-    semaphore = asyncio.Semaphore(CONCURRENCY)
+    print(f"❌ PostID: {post_id} | Failed after {MAX_RETRIES} retries")
+    return False
 
-    async with aiohttp.ClientSession() as session:
-        
-        async def runner(i):
-            async with semaphore:
-                await send_request(session, i)
-
-        tasks = []
-        for i in range(1, TOTAL_REQUESTS + 1):
-            if stop_flag:
-                break
+def main():
+    global shutdown_requested
+    
+    print(f"🚀 Starting process from {START_POST_ID} to {END_POST_ID}...")
+    print(f"📊 Config: {CONCURRENT_WORKERS} workers, {DELAY_PER_REQUEST}s delay, pause every {PAUSE_INTERVAL} requests")
+    print(f"🔄 Max retries: {MAX_RETRIES}, Timeout: {REQUEST_TIMEOUT}s")
+    print("-" * 60)
+    
+    total_processed = 0
+    successful = 0
+    failed = 0
+    
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENT_WORKERS) as executor:
+            futures = {}
             
-            task = asyncio.create_task(runner(i))
-            tasks.append(task)
+            for post_id in range(START_POST_ID, END_POST_ID + 1):
+                if shutdown_requested:
+                    break
+                
+                # Submit task
+                future = executor.submit(send_request_with_retry, post_id)
+                futures[future] = post_id
+                
+                # Limit pending futures to prevent memory issues
+                if len(futures) >= CONCURRENT_WORKERS * 2:
+                    # Wait for at least one to complete
+                    done, _ = concurrent.futures.wait(
+                        futures, 
+                        return_when=concurrent.futures.FIRST_COMPLETED
+                    )
+                    for completed_future in done:
+                        try:
+                            if completed_future.result():
+                                successful += 1
+                            else:
+                                failed += 1
+                        except Exception as e:
+                            failed += 1
+                        del futures[completed_future]
+                        total_processed += 1
+                
+                # Pause Logic
+                if total_processed > 0 and total_processed % PAUSE_INTERVAL == 0:
+                    print(f"\n--- 📊 Progress: {total_processed} processed ({successful} ✅, {failed} ❌). Pausing for {PAUSE_DURATION}s... ---\n")
+                    time.sleep(PAUSE_DURATION)
+                
+                # Small delay between submissions
+                time.sleep(DELAY_PER_REQUEST)
             
-            if i % 50 == 0:
-                await asyncio.sleep(5)
-
-        await asyncio.gather(*tasks, return_exceptions=True)
-        print("✅ Finished.")
+            # Wait for remaining futures
+            for future in concurrent.futures.as_completed(futures):
+                if shutdown_requested:
+                    break
+                try:
+                    if future.result():
+                        successful += 1
+                    else:
+                        failed += 1
+                except Exception as e:
+                    failed += 1
+                total_processed += 1
+                
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+    
+    print("\n" + "=" * 60)
+    print(f"📊 Final Summary:")
+    print(f"   Total Processed: {total_processed}")
+    print(f"   Successful: {successful} ✅")
+    print(f"   Failed: {failed} ❌")
+    print("=" * 60)
+    
+    if shutdown_requested:
+        print("🛑 Process was stopped by user.")
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\nStopped.")
+    main()

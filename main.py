@@ -6,7 +6,7 @@ import concurrent.futures
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 # --- Configuration ---
-START_POST_ID = 150690
+START_POST_ID = 150990
 END_POST_ID = 100000000
 CONCURRENT_WORKERS = 10
 DELAY_PER_REQUEST = 0.1

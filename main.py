@@ -21,7 +21,7 @@ COOKIE = "_abck=FAE3E3D938D02209ECBA22E43979144B~-1~YAAQtsEzuFcZMOyfAQAAkpCXJBBu
 def get_config(key, default):
     return os.getenv(key, default)
 
-START_POST_ID = int(get_config("START_POST_ID", "50000"))
+START_POST_ID = int(get_config("START_POST_ID", "1"))
 END_POST_ID = int(get_config("END_POST_ID", "1000000000000000000"))
 CONCURRENT_WORKERS = int(get_config("CONCURRENT_WORKERS", "5"))
 DELAY_PER_REQUEST = float(get_config("DELAY_PER_REQUEST", "0.5"))

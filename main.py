@@ -10,11 +10,11 @@ import random
 def get_config(key, default):
     return os.getenv(key, default)
 
-START_POST_ID = int(get_config("START_POST_ID", "12300200"))
+START_POST_ID = int(get_config("START_POST_ID", "12300400"))
 END_POST_ID = int(get_config("END_POST_ID", "100000010000"))
-CONCURRENT_WORKERS = int(get_config("CONCURRENT_WORKERS", "1"))
+CONCURRENT_WORKERS = int(get_config("CONCURRENT_WORKERS", "5"))
 DELAY_PER_REQUEST = float(get_config("DELAY_PER_REQUEST", "0.1"))
-PAUSE_INTERVAL = int(get_config("PAUSE_INTERVAL", "10"))
+PAUSE_INTERVAL = int(get_config("PAUSE_INTERVAL", "50"))
 PAUSE_DURATION = float(get_config("PAUSE_DURATION", "1"))
 REQUEST_TIMEOUT = int(get_config("REQUEST_TIMEOUT", "30"))
 MAX_RETRIES = int(get_config("MAX_RETRIES", "3"))
